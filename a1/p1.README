@@ -1,0 +1,85 @@
+*****************************************************
+*
+*  ajain28 - Abhash Jain
+*  CSC548 : - Assignment 1 : Question 2
+*  Individual Problem
+*
+*****************************************************
+
+Problem: Determine the point to point message latency between pair points. We will send the message of different size from 32B,64B,128B....1MB,2MB.
+
+Introduction:
+In this assignment we have used the MPI_Send and MPI_recv to to measure the latency between the two nodes. we run the 10 iteration of each pair of nodes.
+and measure the time using gettimeofday and using the calculated time we calculate the mean and std deviation of each 10 values.
+We use the MPI Blocking calls to communicate between the pair of nodes.
+In my case I communicate from 0 node to 4.1 to 5, 2 to 6 and 3 to 7 cnode.
+
+PREQUISTIES: A compiler capable of compiling MPI program and a multi core processor to run the program
+
+Solution:
+1. Allocate a buffer of memory of given size, fill it with some values
+2. Start a timer
+3. Send the data to it's pair node
+4. Resend the same data to origin node.
+5. Stop the timer
+6. record the time and save it into buffer
+7. repeat this process (2-6)for 10 times
+8. Calculate the mean and std deviation from 10 values.
+
+How to run a Program:
+Get the number of processor using srun Command from the arc cluster.
+E.g. : srun -N8 -n 8 -p opteron --pty /bin/bash
+1. Copy the below file to the working directlory
+
+2. Compile the code using Make file
+$ make -f p1.Makefile
+
+3. To run the program
+$ prun ./p1_mpi 
+e.g:  prun ./p1_mpi
+
+Files submitted:
+1. p1.c
+2. p1.Makefile
+4. p1.README
+5. p1.png
+
+
+Results:
+Comparison between Execution time of Blocking send to measure the latency; these statistic are calculated based on 10 values.
+
+Message_Size	Mean1		Std_Dev_1	Mean2		Std_Dev_2	Mean3		Std_Dev_3	Mean4		Std_Dev_4
+32				3.74E-05	8.83E-05	8.20E-06	3.68E-06	8.30E-06	3.26E-06	8.40E-06	3.38E-06
+64				5.70E-06	1.19E-06	7.10E-06	7.00E-07	7.20E-06	6.00E-07	1.30E-05	1.53E-05
+128				8.20E-06	7.95E-06	7.80E-06	7.48E-07	9.70E-06	5.46E-06	8.30E-06	4.58E-07
+256				3.14E-05	6.89E-05	9.20E-06	6.00E-07	9.30E-06	4.58E-07	6.44E-05	1.55E-04
+512				8.70E-06	4.58E-07	1.08E-05	7.48E-07	1.03E-05	4.58E-07	1.17E-05	2.83E-06
+1024			1.24E-05	5.24E-06	1.27E-05	6.40E-07	1.42E-05	3.94E-06	1.27E-05	4.58E-07
+2048			1.52E-05	5.29E-06	2.31E-05	1.38E-05	1.74E-05	4.90E-07	1.90E-05	6.36E-06
+4096			1.76E-05	4.90E-07	2.11E-05	5.39E-07	2.40E-05	2.10E-06	2.16E-05	4.90E-07
+8192			2.90E-05	6.32E-07	3.24E-05	1.02E-06	3.79E-05	9.43E-07	3.48E-05	3.54E-06
+16384			3.50E-05	1.18E-06	3.83E-05	1.42E-06	6.23E-05	8.61E-06	4.33E-05	8.34E-06
+32768			5.29E-05	8.31E-07	5.58E-05	1.25E-06	1.03E-04	1.07E-05	5.73E-05	7.29E-06
+65536			8.73E-05	6.40E-07	9.55E-05	9.22E-06	1.90E-04	8.66E-05	9.64E-05	6.89E-06
+131072			1.54E-04	4.72E-06	1.58E-04	1.42E-06	3.16E-04	2.31E-05	1.62E-04	3.53E-06
+262144			2.80E-04	1.18E-06	2.84E-04	7.38E-06	4.78E-04	5.98E-05	2.81E-04	8.31E-07
+524288			5.41E-04	1.14E-06	5.42E-04	4.47E-06	9.35E-04	9.65E-05	5.41E-04	9.00E-07
+1048576			1.06E-03	1.33E-06	1.06E-03	7.81E-07	1.78E-03	6.52E-05	1.06E-03	7.00E-07
+2097152			2.12E-03	2.61E-05	2.11E-03	1.04E-06	3.51E-03	1.56E-05	2.11E-03	2.01E-06
+
+Inference 1:
+As the Message size increasing the latency between pair of nodes is also increasing.
+
+Inference 2:
+I have also observed that my 3rd run also higher time than other 3 runs.
+
+Inference 3: 
+Std deviation across the run remain constants.
+
+Inferenc 4: 
+Message size 512Bytes giving abnormal behavior compare to other data values. It takes slightly higher time than neighboring values.
+
+Visual Inference :
+Plots are attached with this assignment and great indicative also the above inference.
+
+---------------------------------End of Document---------------------------
