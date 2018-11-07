@@ -1,0 +1,54 @@
+*****************************************************
+*
+*  ajain28 - Abhash Jain
+*  CSC548 : - Assignment 5 : Question 1
+*  Individual Problem 
+*  README file
+*****************************************************
+
+Problem: Calculate the TFIDF using spark cluster on given Input Documents
+
+Introduction:
+In this Problem we will try to use spark Paradiagm to Calculate the TFIDF for given set of Document. We are given a set of words in document and many documents to calculate the Term Frequency Inverse document Frequency.
+
+PREQUISTIES: A Spark cluster capable of running job and Java Compiler and HDFS to store the documents
+
+How to run a Program:
+Get the number of processor using srun Command from the arc cluster.
+E.g. : srun -N4 -popteron --pty /bin/bash
+1. Set the spark Hadop cluster using below script
+    source spark-hadoop-setup.sh &> setup_output.txt
+
+2. Copy the TFIDF.tar and untar it.
+
+3. replace the TFIDF.java with given TFIDF code with this file
+
+4. Copy the input file to the Server
+$ hdfs dfs -put input /user/ajain28/input
+
+5. To compile the TFIDF use below Compiler
+$ javac TFIDF.java
+$ jar cf TFIDF.jar TFIDF*.class 
+6. Execute the code using following CLI on hadoop
+$ spark-submit --class TFIDF TFIDF.jar input &> spark_output.txt
+
+7. To get the output in a file we will use.
+ $   grep -v '^2018\|^(\|^-' spark_output.txt > output.txt
+
+8. You will get final output on HDFS in output direectory.
+
+Files submitted:
+1. TFIDF.java
+2. p1.README
+
+Explaination:
+In the Given problem we are given corpus of words in documents. While running the task I use the directory on HDFS as input to the Spark program.
+By using these documents we create different RDD which have the data in memory, if RDD size is less then the memory available. We create an Initial job which has all Input path and documents data. from input path we get the document name and content gives the words in the document. From these input we create a RDD "wordRDD" which has data in word@document and docsize(represt the number word in the document.)
+From this wordRDD we create a tfRDD which is trasnformed using map function and reduce function. Map function for tfRDD takes the input from the last step and create key,value pairs which has "1/docsize" which is represented as expression string. Now, on this result we use reduce job to calculate the term frequency expression.
+To calculate the IDF we use the tfrdd Dataset and transform it to IDF using one reduce and 2 map task. 1st Map task emits the word and "1/document_name" then this is feed to reduce task which reduce two string value to "( word , (numDocsWithWord/document1,document2...) )" and this is later to use to create IDF expression from the map job in spark.
+Now we have two RDD one contains TF and other has IDF. 
+first we use a map transformation to convert IDF and TF expression to double numerical value. Later in reduce task I calculate the TFIDF by multiplying the TF and IDF.
+    TFIDF = ((wordCount/docSize))*log(numDocs/numDocsWithWord)
+In final map transformation used to rearrage the outcome of reduce job to document@word : TFIDF pair. which is the expected outcome from this program.
+
+---------------------------------End of Document---------------------------
