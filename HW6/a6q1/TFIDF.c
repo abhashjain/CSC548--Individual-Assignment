@@ -1,3 +1,8 @@
+/*
+* CSC548 - HW6 Question 1- Calculate TFIDF using MPI
+*  Author: ajain28 Abhash Jain
+*
+*/
 #include<stdio.h>
 #include<string.h>
 #include<stdlib.h>
@@ -20,7 +25,7 @@ typedef struct o {
 	int docSize;
 	int numDocs;
 	int numDocsWithWord;
-	double TFIDF_value;
+	double TFIDF_value; //use this field to store TFIDF on worker node
 } obj;
 
 typedef struct w {
@@ -40,22 +45,27 @@ int main(int argc , char *argv[]){
 	int i,j;
 	int numDocs = 0, docSize, contains;
 	//MPI
-	int my_rank,number_of_nodes,tag=50;
+	int my_rank,number_of_nodes;
 	MPI_Status status;
+	//Initialize the MPI
 	MPI_Init(&argc,&argv);
+	//Get the rank of this node
 	MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
+	//Get the number of nodes used to run the program
 	MPI_Comm_size(MPI_COMM_WORLD,&number_of_nodes);
 
 	char filename[MAX_FILEPATH_LENGTH], word[MAX_WORD_LENGTH], document[MAX_DOCUMENT_NAME_LENGTH];
 	// Will hold all TFIDF objects for all documents
 	obj TFIDF[MAX_WORDS_IN_CORPUS];
+	//TFIDF ROOT object for collecting the result from other nodes at root
 	obj ROOT_TFIDF[MAX_WORDS_IN_CORPUS*number_of_nodes];
 	int TF_idx = 0;
 	
 	// Will hold all unique words in the corpus and the number of documents with that word
 	u_w unique_words[MAX_WORDS_IN_CORPUS];
-
+	//Collect the unique words at root node from other nodes
 	u_w ROOT_unique_words[MAX_WORDS_IN_CORPUS*number_of_nodes];
+	//Memset all the memory locations
 	memset(unique_words,0,sizeof(unique_words));
 	memset(ROOT_unique_words,0,sizeof(ROOT_unique_words));
 	memset(TFIDF,0,sizeof(TFIDF));
@@ -65,7 +75,7 @@ int main(int argc , char *argv[]){
 	
 	// Will hold the final strings that will be printed out
 	word_document_str strings[MAX_WORDS_IN_CORPUS];
-	
+	//At root node count Number of documents
 	if(my_rank==0){
 		//Count numDocs
 		if((files = opendir("input")) == NULL){
@@ -83,6 +93,7 @@ int main(int argc , char *argv[]){
 	MPI_Bcast(&numDocs,1,MPI_INT,0,MPI_COMM_WORLD);
 	MPI_Barrier(MPI_COMM_WORLD);
 
+	//On worker node open a file assign to this node and use this file to calculate the TF
 	if(my_rank!=0){
 	// Loop through each document and gather TFIDF variables for each word
 		for(i=my_rank; i<=numDocs; i +=(number_of_nodes-1)){
@@ -148,11 +159,12 @@ int main(int argc , char *argv[]){
 		}
 	}
 
+	//As there are different size of document size wait for all nodes to reach this point
 	MPI_Barrier(MPI_COMM_WORLD);
 	//Get all the unique words at root and merge their count and send back
 	MPI_Gather(&(unique_words),sizeof(u_w)*MAX_WORDS_IN_CORPUS,MPI_BYTE,&(ROOT_unique_words),sizeof(u_w)*MAX_WORDS_IN_CORPUS,MPI_BYTE,0,MPI_COMM_WORLD);
 
-	//Compine the result in unique_words
+	//Compine the result in unique_words from ROOT_unique_words
 	int index=0;
 	if(my_rank==0){
 		for(int i=0;i<MAX_WORDS_IN_CORPUS*number_of_nodes;i++){
@@ -181,6 +193,7 @@ int main(int argc , char *argv[]){
 				unique_words[i].numDocsWithWord,unique_words[i].currDoc);
 		}*/
 	}
+	//Wait for rank to finish the unique word processing and send this to all the worker node
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Bcast(&(unique_words),MAX_WORDS_IN_CORPUS*sizeof(u_w),MPI_BYTE,0,MPI_COMM_WORLD);
 
@@ -188,7 +201,7 @@ int main(int argc , char *argv[]){
 	//printf("-------------TF Job-------------\n");
 	//for(j=0; j<TF_idx; j++)
 	//	printf("%s@%s\t%d/%d\n", TFIDF[j].word, TFIDF[j].document, TFIDF[j].wordCount, TFIDF[j].docSize);
-		
+
 	// Use unique_words array to populate TFIDF objects with: numDocsWithWord
 	if(my_rank!=0){
 		for(i=0; i<TF_idx; i++) {
@@ -213,10 +226,13 @@ int main(int argc , char *argv[]){
 		}
 			//double TFIDF_value = TF * IDF;
 			//sprintf(strings[j], "%s@%s\t%.16f", TFIDF[j].document, TFIDF[j].word, TFIDF_value);
-	}
+	} //End of If rank condition
+
+	//collect the TFIDF data on root node from workers
 	MPI_Barrier(MPI_COMM_WORLD);
 	MPI_Gather(&TFIDF,sizeof(obj)*MAX_WORDS_IN_CORPUS,MPI_BYTE,&ROOT_TFIDF,sizeof(obj)*MAX_WORDS_IN_CORPUS,MPI_BYTE,0,MPI_COMM_WORLD);
 
+	//On master node print the TFIDF in strings in required format
 	if(my_rank==0){
 		int scount =0;
 		for(int i=0;i<MAX_WORDS_IN_CORPUS*number_of_nodes;i++){
@@ -236,7 +252,7 @@ int main(int argc , char *argv[]){
 			fprintf(fp, "%s\n", strings[i]);
 		fclose(fp);
 	}
+	//Mpi_finalize to terminate the MPI execution
 	MPI_Finalize();
-	
 	return 0;	
 }
