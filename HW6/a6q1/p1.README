@@ -1,0 +1,70 @@
+*****************************************************
+*
+*  ajain28 - Abhash Jain
+*  CSC548 : - Assignment 6 : Question 1
+*  Individual Problem 
+*  README file
+*****************************************************
+
+Problem: Calculate the TFIDF using MPI
+
+Introduction:
+In the Problem we will try to use Map reduce Paradiagm to Calculate the TFIDF for given set of Document. We are given a set of words in document and many documents to calculate the Term Frequency Inverse document Frequency. This will do map-reduce on MPI.
+
+PREQUISTIES: Set up node able to to run MPI task
+
+How to run a Program:
+Get the number of processor using srun Command from the arc cluster.
+E.g. : srun -N4 -popteron --pty /bin/bash
+
+1. Copy the TFIDF.tar and untar it.
+
+2. replace the TFIDF.c with TFIDF.c submitted with this file
+
+3. Build the code
+	$ make
+4. Run the program
+	$ ./TFIDF
+
+Files submitted:
+1. TFIDF.c
+2. p1.README
+
+Explaination:
+Implementation:-
+Initialize the MPI. Create the memory for storing the result at root node to store the TFIDF structure and unique words. At root node we count the number of documents. and use MPI_Bcast to send the data to other nodes and as there is some extra work to calculate the number of node we put Barrier so all nodes will be in sync.
+At every node other than root node we open a file and read each word and check if that word is already present in word@docX, if this word already exist then increment the count for this in TFIDF otherwise add a new entry in this TFIDF array. If this currently processing word is present in unique_word then increment the count of numdocwiththatword for that word in struct array. Otherwise create a new entry in struct uniqueword. After this we use MPI_Barrier to wait for other nodes to process their element,Then gather unique word at root element.Combine the result of unique word at root node to in unique_word then broadcast this (MPI_Bcast) to other nodes. Now use new unique_words array to update the TFIDF[x].numwordwithword, calculate TFIDF and every node send their TFIDF to root node and root node sort the outcome and emit this to a file.
+
+Proposed Improvement:
+We can use OpenMP to improve it's performace by making use of multiple threads and utilizing all the cores. We can have OpenMP directive before the for loop where we are processing each word in the document, then we can use OpenMP directive where we are combining the results at the root node. and at for loop where we are calculating the TFIDF using TF and IDF. Doing this can improve the performace of it by a significant factor while processing big documents.
+
+Comparistion: 
+this MPI version is limited to 32 unique words, while previous spark and hadoop version don't have this limitation.
+I found that MPI performs very well over spark and Hadoop. But as the input size increase MPI version is limited by memory. So, We need distributed file system to store large amount of data and in that case spark and Hadoop version might be very useful.
+
+I have done some analysis for small file for execution time:
+---------------
+Hadoop Time:
+[ajain28@c29 a4q1]$ time hadoop jar TFIDF.jar TFIDF input &> hadoop_output.txt
+
+real	0m8.498s
+user	0m15.255s
+sys	0m0.992s
+
+------------
+Spark time:
+[ajain28@c37 TFIDF]$ time spark-submit --class TFIDF TFIDF.jar input &> spark_output.txt
+
+real	0m8.807s
+user	0m22.883s
+sys	0m1.521s
+
+MPI Time:-
+-------------
+[ajain28@c29 TFIDF-2]$ time ./TFIDF
+
+real	0m0.113s
+user	0m0.027s
+sys	0m0.066s
+
+---------------------------------End of Document---------------------------

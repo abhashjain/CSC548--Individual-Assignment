@@ -65,6 +65,7 @@ int main(int argc , char *argv[]){
 	u_w unique_words[MAX_WORDS_IN_CORPUS];
 	//Collect the unique words at root node from other nodes
 	u_w ROOT_unique_words[MAX_WORDS_IN_CORPUS*number_of_nodes];
+	
 	//Memset all the memory locations
 	memset(unique_words,0,sizeof(unique_words));
 	memset(ROOT_unique_words,0,sizeof(ROOT_unique_words));
@@ -164,7 +165,7 @@ int main(int argc , char *argv[]){
 	//Get all the unique words at root and merge their count and send back
 	MPI_Gather(&(unique_words),sizeof(u_w)*MAX_WORDS_IN_CORPUS,MPI_BYTE,&(ROOT_unique_words),sizeof(u_w)*MAX_WORDS_IN_CORPUS,MPI_BYTE,0,MPI_COMM_WORLD);
 
-	//Compine the result in unique_words from ROOT_unique_words
+	//Combine the result in unique_words from ROOT_unique_words
 	int index=0;
 	if(my_rank==0){
 		for(int i=0;i<MAX_WORDS_IN_CORPUS*number_of_nodes;i++){
@@ -241,6 +242,7 @@ int main(int argc , char *argv[]){
 			}
 		}
 		TF_idx = scount;
+		
 		// Sort strings and print to file
 		qsort(strings, TF_idx, sizeof(char)*MAX_STRING_LENGTH, myCompare);
 		FILE* fp = fopen("output.txt", "w");
